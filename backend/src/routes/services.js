@@ -1,5 +1,6 @@
 const express = require("express");
 const axios = require("axios");
+const QRCode = require("qrcode");
 const pool = require("../db");
 
 const router = express.Router();
@@ -16,6 +17,25 @@ router.get("/", async (req, res) => {
     });
   } catch (error) {
     res.status(502).json({ error: "Upstream service error" });
+  }
+});
+
+router.get("/:serviceId/qrcode", async (req, res) => {
+  const serviceId = Number(req.params.serviceId);
+
+  if (!Number.isInteger(serviceId) || serviceId <= 0) {
+    return res.status(400).json({ error: "serviceId must be a positive integer" });
+  }
+
+  try {
+    const payload = JSON.stringify({ service_id: serviceId });
+    const buffer = await QRCode.toBuffer(payload, { type: "png" });
+
+    res.setHeader("Content-Type", "image/png");
+    return res.send(buffer);
+  } catch (error) {
+    console.error("Failed to generate QR code", error);
+    return res.status(500).json({ error: "QR code generation failed" });
   }
 });
 
