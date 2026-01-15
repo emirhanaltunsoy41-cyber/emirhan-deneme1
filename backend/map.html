@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ogrenci Haritasi</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+      }
+      header {
+        padding: 16px 24px;
+        border-bottom: 1px solid #e0e0e0;
+      }
+      #status {
+        padding: 8px 24px 0;
+        font-size: 14px;
+        color: #555;
+      }
+      #map {
+        height: calc(100vh - 90px);
+        width: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Ogrenci Haritasi</h1>
+    </header>
+    <div id="status">Harita yukleniyor...</div>
+    <div id="map"></div>
+
+    <script>
+      let map;
+      let bounds;
+      let routePolyline;
+      let markers = [];
+
+      const statusEl = document.getElementById("status");
+
+      function setStatus(message) {
+        statusEl.textContent = message;
+      }
+
+      function initMap() {
+        map = new google.maps.Map(document.getElementById("map"), {
+          center: { lat: 39.0, lng: 35.0 },
+          zoom: 6
+        });
+
+        bounds = new google.maps.LatLngBounds();
+
+        loadStudents();
+        loadRoute();
+      }
+
+      function addMarker(student) {
+        const position = { lat: student.lat, lng: student.lng };
+        const marker = new google.maps.Marker({
+          position,
+          map,
+          title: student.name || "Ogrenci"
+        });
+        markers.push(marker);
+        bounds.extend(position);
+      }
+
+      async function loadStudents() {
+        try {
+          const response = await fetch("/students");
+          const data = await response.json();
+          const students = Array.isArray(data.data) ? data.data : [];
+
+          markers.forEach((marker) => marker.setMap(null));
+          markers = [];
+
+          students.forEach((student) => {
+            if (
+              typeof student.lat === "number" &&
+              typeof student.lng === "number"
+            ) {
+              addMarker(student);
+            }
+          });
+
+          if (!bounds.isEmpty()) {
+            map.fitBounds(bounds);
+          }
+
+          setStatus("Ogrenciler yuklendi.");
+        } catch (error) {
+          console.error("Failed to load students", error);
+          setStatus("Ogrenciler yuklenemedi.");
+        }
+      }
+
+      function decodeRoutePath(routeData) {
+        if (!routeData) {
+          return null;
+        }
+
+        if (typeof routeData.polyline === "string") {
+          return google.maps.geometry.encoding.decodePath(routeData.polyline);
+        }
+
+        const pathArray = routeData.path || routeData.stops || routeData;
+        if (Array.isArray(pathArray)) {
+          return pathArray
+            .filter((point) => point && point.lat != null && point.lng != null)
+            .map((point) => ({
+              lat: Number(point.lat),
+              lng: Number(point.lng)
+            }));
+        }
+
+        return null;
+      }
+
+      async function loadRoute() {
+        try {
+          const response = await fetch("/routes");
+          const data = await response.json();
+          const route = data.data;
+          const routeData = route ? route.route_data : null;
+          const path = decodeRoutePath(routeData);
+
+          if (!path || path.length === 0) {
+            setStatus("Rota bulunamadi.");
+            return;
+          }
+
+          if (routePolyline) {
+            routePolyline.setMap(null);
+          }
+
+          routePolyline = new google.maps.Polyline({
+            path,
+            geodesic: true,
+            strokeColor: "#1a73e8",
+            strokeOpacity: 0.9,
+            strokeWeight: 4
+          });
+
+          routePolyline.setMap(map);
+
+          path.forEach((point) => bounds.extend(point));
+          if (!bounds.isEmpty()) {
+            map.fitBounds(bounds);
+          }
+
+          setStatus("Rota yuklendi.");
+        } catch (error) {
+          console.error("Failed to load route", error);
+          setStatus("Rota yuklenemedi.");
+        }
+      }
+
+      async function loadGoogleMaps() {
+        try {
+          const response = await fetch("/config");
+          const config = await response.json();
+          const apiKey = config.googleMapsApiKey;
+
+          if (!apiKey) {
+            setStatus("GOOGLE_API_KEY tanimlanmamis.");
+            return;
+          }
+
+          const script = document.createElement("script");
+          script.src =
+            "https://maps.googleapis.com/maps/api/js?key=" +
+            encodeURIComponent(apiKey) +
+            "&callback=initMap&libraries=geometry";
+          script.async = true;
+          script.defer = true;
+          document.head.appendChild(script);
+        } catch (error) {
+          console.error("Failed to load Maps API", error);
+          setStatus("Google Maps API yuklenemedi.");
+        }
+      }
+
+      window.initMap = initMap;
+      document.addEventListener("DOMContentLoaded", loadGoogleMaps);
+    </script>
+  </body>
+</html>

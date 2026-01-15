@@ -1,0 +1,90 @@
+{
+  "info": {
+    "_postman_id": "b7a76c91-f3a4-4d8d-9ab7-6c2e2a7d3f10",
+    "name": "Backend API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Servis oluştur",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"plate\": \"34ABC123\",\n  \"start_lat\": 41.0082,\n  \"start_lng\": 28.9784\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/services",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "services"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Öğrenci ekle",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Ada Lovelace\",\n  \"phone\": \"+90 555 000 0000\",\n  \"address\": \"Istanbul, Turkey\",\n  \"service_id\": 1\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/students",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "students"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Rota oluştur",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"service_id\": 1,\n  \"route_data\": {\n    \"distance_km\": 12.5,\n    \"stops\": [\n      {\n        \"lat\": 41.0082,\n        \"lng\": 28.9784\n      },\n      {\n        \"lat\": 41.0151,\n        \"lng\": 28.9796\n      }\n    ]\n  }\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/routes",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "routes"
+          ]
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    }
+  ]
+}

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ogrenci Kayit</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 24px;
+      }
+      form {
+        max-width: 420px;
+        display: grid;
+        gap: 12px;
+      }
+      label {
+        display: grid;
+        gap: 6px;
+        font-size: 14px;
+      }
+      input,
+      textarea,
+      button {
+        font-size: 14px;
+        padding: 8px;
+      }
+      #result {
+        margin-top: 16px;
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Ogrenci Kayit Formu</h1>
+    <form id="student-form">
+      <label>
+        Ad
+        <input name="name" type="text" required />
+      </label>
+      <label>
+        Telefon
+        <input name="phone" type="text" required />
+      </label>
+      <label>
+        Adres
+        <textarea name="address" rows="3" required></textarea>
+      </label>
+      <button type="submit">Kaydet</button>
+    </form>
+    <div id="result"></div>
+
+    <script>
+      const form = document.getElementById("student-form");
+      const result = document.getElementById("result");
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        result.textContent = "Gonderiliyor...";
+
+        const payload = {
+          name: form.elements.name.value.trim(),
+          phone: form.elements.phone.value.trim(),
+          address: form.elements.address.value.trim(),
+          service_id: 1
+        };
+
+        try {
+          const response = await fetch("/students", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify(payload)
+          });
+
+          const data = await response.json();
+          if (!response.ok) {
+            throw new Error(data.error || "Istek basarisiz");
+          }
+
+          result.textContent = "Kayit basarili. ID: " + data.data.id;
+          form.reset();
+        } catch (error) {
+          result.textContent = "Hata: " + error.message;
+        }
+      });
+    </script>
+  </body>
+</html>
