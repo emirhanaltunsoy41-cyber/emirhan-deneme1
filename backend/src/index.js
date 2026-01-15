@@ -2,7 +2,9 @@ const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
 
-const routes = require("./routes/routes");
+const servicesRoutes = require("./routes/services");
+const studentsRoutes = require("./routes/students");
+const routesRoutes = require("./routes/routes");
 
 dotenv.config();
 
@@ -15,7 +17,9 @@ app.get("/", (req, res) => {
   res.json({ status: "ok" });
 });
 
-app.use("/api", routes);
+app.use("/services", servicesRoutes);
+app.use("/students", studentsRoutes);
+app.use("/routes", routesRoutes);
 
 const PORT = 3000;
 app.listen(PORT, () => {
