@@ -5,6 +5,18 @@ const pool = require("../db");
 
 const router = express.Router();
 
+router.get("/", async (req, res) => {
+  try {
+    const result = await pool.query(
+      "SELECT id, name, phone, address, lat, lng, service_id FROM students ORDER BY id"
+    );
+    return res.json({ data: result.rows });
+  } catch (error) {
+    console.error("Failed to fetch students", error);
+    return res.status(500).json({ error: "Database error" });
+  }
+});
+
 router.post("/", async (req, res) => {
   const { name, phone, address, service_id } = req.body;
 
