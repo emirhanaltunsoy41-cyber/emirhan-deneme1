@@ -1,32 +1,60 @@
 const express = require("express");
+const axios = require("axios");
+
+const pool = require("../db");
 
 const router = express.Router();
 
-const students = [
-  { id: 1, name: "Ada Lovelace", department: "Computer Science" },
-  { id: 2, name: "Alan Turing", department: "Mathematics" },
-  { id: 3, name: "Grace Hopper", department: "Engineering" }
-];
+router.post("/", async (req, res) => {
+  const { name, phone, address, service_id } = req.body;
 
-router.get("/", (req, res) => {
-  res.json({ data: students });
-});
-
-router.post("/", (req, res) => {
-  const { name, department } = req.body;
-
-  if (!name || !department) {
-    return res.status(400).json({ error: "name and department are required" });
+  if (
+    typeof name !== "string" ||
+    typeof phone !== "string" ||
+    typeof address !== "string" ||
+    typeof service_id !== "number"
+  ) {
+    return res.status(400).json({
+      error: "name, phone, address, service_id are required"
+    });
   }
 
-  const newStudent = {
-    id: students.length + 1,
-    name,
-    department
-  };
+  const apiKey = process.env.GOOGLE_API_KEY;
+  if (!apiKey) {
+    return res.status(500).json({ error: "GOOGLE_API_KEY is not configured" });
+  }
 
-  students.push(newStudent);
-  res.status(201).json({ data: newStudent });
+  try {
+    const geoResponse = await axios.get(
+      "https://maps.googleapis.com/maps/api/geocode/json",
+      {
+        params: {
+          address,
+          key: apiKey
+        }
+      }
+    );
+
+    if (
+      geoResponse.data.status !== "OK" ||
+      !geoResponse.data.results ||
+      geoResponse.data.results.length === 0
+    ) {
+      return res.status(400).json({ error: "Address not found" });
+    }
+
+    const { lat, lng } = geoResponse.data.results[0].geometry.location;
+
+    const result = await pool.query(
+      "INSERT INTO students (name, phone, address, lat, lng, service_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
+      [name, phone, address, lat, lng, service_id]
+    );
+
+    return res.status(201).json({ data: result.rows[0] });
+  } catch (error) {
+    console.error("Failed to create student", error);
+    return res.status(500).json({ error: "Database error" });
+  }
 });
 
 module.exports = router;
